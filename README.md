@@ -15,11 +15,10 @@ git submodule update --init --recursive
 pip install -r requirements.txt
 pip install ./dbsenv
 
-python src/main.py
+python src/run_env_cls.py
 tensorboard --logdir ./ppo_tensorboard
 
-# open http://localhost:6006/
-# to visualize training results in TensorBoard.
+# open http://localhost:6006/ to visualize training results in TensorBoard.
 ```
 
 ## Related Repositories
