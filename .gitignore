@@ -9,4 +9,5 @@ data/*
 libkuramoto.so
 
 ppo_tensorboard/
-ppo_dbs.zip
+agents/*
+!agents/README.md
