@@ -5,12 +5,12 @@ Example usage of the FTSTS DBS environment with a PPO agent to simulate closed-l
 import numpy as np
 from tqdm import tqdm
 import gymnasium as gym
-from gymnasium.wrappers import NormalizeObservation, NormalizeReward, RescaleAction
 from stable_baselines3 import PPO
-from dbsenv.neural_models import EILIFNetwork
-from dbsenv.neural_models.synchrony import kop
-from dbsenv.utils import SimConfig
+from gymnasium.wrappers import NormalizeObservation, NormalizeReward, RescaleAction
 from dbsenv.wrappers import DBSNormalizeObservation
+from dbsenv.neural_models import EILIFNetwork
+from dbsenv.utils.synchrony import kop
+from dbsenv.utils import SimConfig
 from neuroloop.utils import plot_kop
 
 

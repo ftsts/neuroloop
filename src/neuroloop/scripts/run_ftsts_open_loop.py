@@ -6,7 +6,7 @@ import numpy as np
 from tqdm import tqdm
 import gymnasium as gym
 from dbsenv.neural_models import EILIFNetwork
-from dbsenv.neural_models.synchrony import kop
+from dbsenv.utils.synchrony import kop
 from dbsenv.utils import SimConfig
 from neuroloop.utils import plot_kop
 
