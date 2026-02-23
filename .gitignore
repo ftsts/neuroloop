@@ -1,13 +1,15 @@
 # malware
-venv/
-__pycache__/
+.DS_Store
 .vscode/
+.venv/
+__pycache__/
 
 data/*
 !data/README.md
 
-libkuramoto.so
-
-ppo_tensorboard/
 agents/*
 !agents/README.md
+
+ppo_tensorboard/
+
+libkuramoto.so
