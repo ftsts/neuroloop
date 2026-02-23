@@ -1,6 +1,17 @@
 import matplotlib.pyplot as plt
 
 
+def plot_action(actions):
+
+    plt.figure()
+    plt.plot(actions)
+    plt.xlabel("Sample Step")
+    plt.ylabel("Action Amplitude")
+    plt.title("Control Signal Over Time")
+    plt.tight_layout()
+    plt.show()
+
+
 def plot_kop(t, re):
     """Plot the Kuramoto (Synchrony) Order Parameter."""
 

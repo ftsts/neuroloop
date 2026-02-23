@@ -5,18 +5,19 @@ Using the FTSTS DBS environment with a fixed action to simulate the original ope
 import numpy as np
 from tqdm import tqdm
 import gymnasium as gym
+from gymnasium.wrappers import NormalizeObservation, NormalizeReward
+from dbsenv.wrappers import DBSNormalizeObservation
 from dbsenv.neural_models import EILIFNetwork
-from dbsenv.utils.synchrony import kop
 from dbsenv.utils import SimConfig
-from neuroloop.utils import plot_kop
+from neuroloop.evaluation import evaluate
+from neuroloop.utils import plot_kop, plot_action
 
 
-def main():
-    """Simulates the original open-loop ftsts regime."""
+def env_config():
+    """Configure Environment."""
 
     # Configure simulation.
     sim_config = SimConfig(
-        # duration=25*1000,
         duration=5000,
         step_size=0.1,
         sample_duration=20,
@@ -24,7 +25,7 @@ def main():
 
     # Create the environment.
     env = gym.make(
-        'dbsenv/DBS-FTSTS-v0',
+        id="dbsenv/DBS-FTSTS-v0",
         sim_config=sim_config,
         model_class=EILIFNetwork,
         model_params={
@@ -32,36 +33,74 @@ def main():
             "num_i": 40,
         },
     )
-    raw_env = env.unwrapped
-    num_samples = raw_env.model.num_samples
+    env = DBSNormalizeObservation(env)  # deterministic scaling
+    env = NormalizeObservation(env)  # running mean/std
+    env = NormalizeReward(env)
 
-    env.reset()
+    return env
+
+
+def open_loop_rollout(action, env):
+
+    obs, info = env.reset()
     done = False
+
     sptime = None
-    with tqdm(total=num_samples, desc="Simulating") as pbar:
+    actions = []
+    num_samples = info["num_samples"]
+
+    with tqdm(total=num_samples, desc="Rollout") as pbar:
         while not done:
-            action = np.array([100], dtype=np.float64)
-            _, _, terminated, truncated, info = env.step(action)
-            done = terminated or truncated
+            _action = np.array([action], dtype=np.float64)
+            obs, reward, terminated, truncated, info = env.step(_action)
+
+            actions.append(info["action"])
             sptime = info["spike_time_e"]
+
+            done = terminated or truncated
             pbar.update(1)
 
-    step_size = raw_env.sim_config.step_size
-    duration = raw_env.sim_config.duration
-    ne = raw_env.model.num_e
-    t = np.arange(0.1, duration + step_size, step_size)
+    actions = np.array(actions)
 
-    print("computing kop")
-    re = kop(
-        sptime=sptime,
-        t=t,
-        step_size=step_size,
-        duration=duration,
-        num_neurons=ne,
-    )
+    episode_data = {
+        "actions": actions,
+        "sptime": sptime,
+        "step_size": info["step_size"],
+        "duration": info["duration"],
+        "num_neurons_e": info["num_neurons_e"],
+    }
 
-    print("plotting kop")
+    return episode_data
+
+
+def plot_results(episode_data):
+    t = episode_data["t"]
+    re = episode_data["kop"]
     plot_kop(t, re)
+
+    actions = episode_data["actions"]
+    plot_action(actions)
+
+
+def main():
+    """Simulates the original open-loop ftsts regime."""
+
+    # Create the environment.
+    env = env_config()
+
+    # Open-Loop Simulation.
+    v_stim = 100  # mV
+    episode_data = open_loop_rollout(v_stim, env)
+
+    # Evaluate.
+    episode_data = evaluate(episode_data)
+
+    # Print Metrics.
+    print("\n--- Evaluation Metrics ---")
+    for k, v in episode_data["metrics"].items():
+        print(f"  {k}: {v:.4f}")
+
+    plot_results(episode_data)
 
     env.close()
 
