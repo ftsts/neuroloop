@@ -141,6 +141,7 @@ version = "0.1.0"
 source = { editable = "../dbsenv" }
 dependencies = [
     { name = "gymnasium" },
+    { name = "matplotlib" },
     { name = "numpy" },
     { name = "tqdm" },
 ]
@@ -148,6 +149,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "gymnasium", specifier = ">=1.2.3" },
+    { name = "matplotlib", specifier = ">=3.10.8" },
     { name = "numpy", specifier = ">=2.4.2" },
     { name = "pre-commit", marker = "extra == 'dev'" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.0.2" },
