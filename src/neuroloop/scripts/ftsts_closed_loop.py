@@ -15,6 +15,7 @@ from neuroloop.plots import (
     plot_avg_synaptic_weight,
 )
 
+
 TB_LOG_DIR = Path("./ppo_tensorboard/")  # tensorboard logging directory
 AGENTS_DIR = Path("./agents/")  # for saving trained agents
 
@@ -73,12 +74,12 @@ def agent_config(env, path: Path = None, load=False):
     return agent
 
 
-def plot_results(episode_data: dict):
-    t = episode_data["t"]
-    re = episode_data["kop"]
+def plot_results(data):
+    t = data["t"]
+    re = data["kop"]
     plot_kop(t, re)
 
-    actions = episode_data["actions"]
+    actions = data["actions"]
     plot_action(actions)
 
     # sptime, step_size, duration, ne, J_I, W_IE, synchrony, spike_e, spike_i, si = data
@@ -87,21 +88,20 @@ def plot_results(episode_data: dict):
     # plot_synchrony(synchrony)
     # plot_synchrony(si)
 
-    spike_e = episode_data["spike_e"]
-    spike_i = episode_data["spike_i"]
-    step_size = episode_data["step_size"]
+    spike_e = data["spike_e"]
+    spike_i = data["spike_i"]
+    step_size = data["step_size"]
     plot_spike_patterns(spike_e, spike_i, step_size)
 
-    j_i = episode_data["j_i"]
-    w_ie = episode_data["w_ie"]
-    duration = episode_data["duration"]
+    j_i = data["j_i"]
+    w_ie = data["w_ie"]
+    duration = data["duration"]
     plot_avg_synaptic_weight(t, j_i, w_ie, duration)
 
 
-def main():
+def run():
     """
-    Trains and uses an SB3 PPO agent in the FTSTS Environment, simulating the
-    closed-loop regime.
+    Simulates closed-loop DBS control by training an SB3 PPO agent in FTSTSEnv.
     """
     assert AGENTS_DIR.exists() and AGENTS_DIR.is_dir()
     assert TB_LOG_DIR.exists() and TB_LOG_DIR.is_dir()
@@ -126,4 +126,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    run()

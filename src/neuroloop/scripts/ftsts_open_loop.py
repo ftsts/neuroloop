@@ -99,7 +99,7 @@ def plot_results(data):
     plot_avg_synaptic_weight(t, j_i, w_ie, duration)
 
 
-def main():
+def run():
     """Simulates the original open-loop ftsts regime."""
 
     # Create the environment.
@@ -123,4 +123,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    run()

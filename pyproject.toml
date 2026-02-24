@@ -13,6 +13,7 @@ dependencies = [
 
 [project.scripts]
 neuroloop = "neuroloop:main"
+nl        = "neuroloop.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.9.11,<0.10.0"]
