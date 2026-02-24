@@ -3,11 +3,12 @@ name = "neuroloop"
 version = "0.1.0"
 description = "Training and evaluation pipeline for Closed-Loop Deep Brain Stimulation RL experiments."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 dependencies = [
     "dbsenv",
     "stable-baselines3>=2.7.1",
     "tensorboard>=2.20.0",
+    "setuptools<70",
 ]
 
 [project.scripts]
