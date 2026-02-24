@@ -6,9 +6,14 @@ from gymnasium.wrappers import NormalizeObservation, NormalizeReward, RescaleAct
 from dbsenv.wrappers import DBSNormalizeObservation
 from dbsenv.neural_models import EILIFNetwork
 from dbsenv.utils import SimConfig
-from neuroloop.evaluation import rollout, evaluate
-from neuroloop.utils import plot_kop, plot_action
-
+from neuroloop.evaluation import rollout, evaluate, save_eval, load_eval
+from neuroloop.plots import (
+    plot_kop,
+    plot_action,
+    plot_synchrony,
+    plot_spike_patterns,
+    plot_avg_synaptic_weight,
+)
 
 TB_LOG_DIR = Path("./ppo_tensorboard/")  # tensorboard logging directory
 AGENTS_DIR = Path("./agents/")  # for saving trained agents
@@ -42,13 +47,55 @@ def env_config():
     return env
 
 
-def plot_results(episode_data):
+def agent_config(env, path: Path = None, load=False):
+    if load:
+        assert path.exists() and path.is_file(), path
+        agent = PPO.load(path)
+        return agent
+
+    agent = PPO(
+        "MlpPolicy",
+        env,
+        ent_coef=0.5,
+        verbose=1,
+        tensorboard_log=TB_LOG_DIR,
+    )
+
+    agent.learn(total_timesteps=10_000)
+
+    if path is None:
+        ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        path = AGENTS_DIR / f"ppo_ftsts_{ts}.zip"
+
+    print(f"Agent saved to: {path}")
+    agent.save(path)
+
+    return agent
+
+
+def plot_results(episode_data: dict):
     t = episode_data["t"]
     re = episode_data["kop"]
     plot_kop(t, re)
 
     actions = episode_data["actions"]
     plot_action(actions)
+
+    # sptime, step_size, duration, ne, J_I, W_IE, synchrony, spike_e, spike_i, si = data
+    # t = np.arange(0.1, duration + step_size, step_size)
+    # t = np.ascontiguousarray(t, dtype=np.float64)
+    # plot_synchrony(synchrony)
+    # plot_synchrony(si)
+
+    spike_e = episode_data["spike_e"]
+    spike_i = episode_data["spike_i"]
+    step_size = episode_data["step_size"]
+    plot_spike_patterns(spike_e, spike_i, step_size)
+
+    j_i = episode_data["j_i"]
+    w_ie = episode_data["w_ie"]
+    duration = episode_data["duration"]
+    plot_avg_synaptic_weight(t, j_i, w_ie, duration)
 
 
 def main():
@@ -59,38 +106,20 @@ def main():
     assert AGENTS_DIR.exists() and AGENTS_DIR.is_dir()
     assert TB_LOG_DIR.exists() and TB_LOG_DIR.is_dir()
 
-    # Configure the Environment.
     env = env_config()
+    agent = agent_config(env)  # train or load trained agent
 
-    # Configure the Agent.
-    agent = PPO(
-        "MlpPolicy",
-        env,
-        ent_coef=0.5,
-        verbose=1,
-        tensorboard_log=TB_LOG_DIR,
-    )
-    ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    agent_path = AGENTS_DIR / f"ppo_ftsts_{ts}"
-
-    # Train the agent.
-    agent.learn(total_timesteps=1)
-    agent.save(agent_path)
-
-    # agent = PPO.load(agent_path)
-
-    # Rollout.
-    episode_data = rollout(agent, env)
-
-    # Evaluate.
+    episode_data = rollout(agent, env)  # agent interacts with env
     episode_data = evaluate(episode_data)
 
-    # Print Metrics.
+    path = save_eval(episode_data)
+    results = load_eval(path)
+
     print("\n--- Evaluation Metrics ---")
-    for k, v in episode_data["metrics"].items():
+    for k, v in results["metrics"].items():
         print(f"  {k}: {v:.4f}")
 
-    plot_results(episode_data)
+    plot_results(results)
 
     env.close()
     del agent

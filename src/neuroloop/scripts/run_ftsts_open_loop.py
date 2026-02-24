@@ -9,8 +9,14 @@ from gymnasium.wrappers import NormalizeObservation, NormalizeReward
 from dbsenv.wrappers import DBSNormalizeObservation
 from dbsenv.neural_models import EILIFNetwork
 from dbsenv.utils import SimConfig
-from neuroloop.evaluation import evaluate
-from neuroloop.utils import plot_kop, plot_action
+from neuroloop.evaluation import evaluate, save_eval, load_eval
+from neuroloop.plots import (
+    plot_kop,
+    plot_action,
+    plot_synchrony,
+    plot_spike_patterns,
+    plot_avg_synaptic_weight,
+)
 
 
 def env_config():
@@ -45,7 +51,6 @@ def open_loop_rollout(action, env):
     obs, info = env.reset()
     done = False
 
-    sptime = None
     actions = []
     num_samples = info["num_samples"]
 
@@ -55,7 +60,6 @@ def open_loop_rollout(action, env):
             obs, reward, terminated, truncated, info = env.step(_action)
 
             actions.append(info["action"])
-            sptime = info["spike_time_e"]
 
             done = terminated or truncated
             pbar.update(1)
@@ -64,22 +68,35 @@ def open_loop_rollout(action, env):
 
     episode_data = {
         "actions": actions,
-        "sptime": sptime,
-        "step_size": info["step_size"],
-        "duration": info["duration"],
-        "num_neurons_e": info["num_neurons_e"],
+        **info,
     }
 
     return episode_data
 
 
-def plot_results(episode_data):
-    t = episode_data["t"]
-    re = episode_data["kop"]
+def plot_results(data):
+    t = data["t"]
+    re = data["kop"]
     plot_kop(t, re)
 
-    actions = episode_data["actions"]
+    actions = data["actions"]
     plot_action(actions)
+
+    # sptime, step_size, duration, ne, J_I, W_IE, synchrony, spike_e, spike_i, si = data
+    # t = np.arange(0.1, duration + step_size, step_size)
+    # t = np.ascontiguousarray(t, dtype=np.float64)
+    # plot_synchrony(synchrony)
+    # plot_synchrony(si)
+
+    spike_e = data["spike_e"]
+    spike_i = data["spike_i"]
+    step_size = data["step_size"]
+    plot_spike_patterns(spike_e, spike_i, step_size)
+
+    j_i = data["j_i"]
+    w_ie = data["w_ie"]
+    duration = data["duration"]
+    plot_avg_synaptic_weight(t, j_i, w_ie, duration)
 
 
 def main():
@@ -87,23 +104,23 @@ def main():
 
     # Create the environment.
     env = env_config()
+    v_stim = 100  # (mV) simulate open-loop control
 
-    # Open-Loop Simulation.
-    v_stim = 100  # mV
     episode_data = open_loop_rollout(v_stim, env)
-
-    # Evaluate.
     episode_data = evaluate(episode_data)
 
-    # Print Metrics.
+    path = save_eval(episode_data)
+    data = load_eval(path)
+
     print("\n--- Evaluation Metrics ---")
-    for k, v in episode_data["metrics"].items():
+    print()
+    for k, v in data["metrics"].items():
         print(f"  {k}: {v:.4f}")
 
-    plot_results(episode_data)
+    plot_results(data)
 
     env.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
